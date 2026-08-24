@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 자가업무진단 플랫폼</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+                <h1>AI 자가업무진단 플랫폼</h1>
+                <p>자기개발을 통한 최선의 업무효율을 위한 스마트 진단 시스템</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="add-task-btn" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> 업무 추가
+            </button>
+            <button id="export-excel-btn" class="btn btn-success">
+                <i class="fa-solid fa-file-excel"></i> 엑셀 다운로드
+            </button>
+            <button id="reset-btn" class="btn btn-danger">
+                <i class="fa-solid fa-rotate-right"></i> 초기화
+            </button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <!-- Tasks Container -->
+        <section class="tasks-container" id="tasks-container">
+            <!-- Task cards will be generated here by JS -->
+        </section>
+
+        <!-- Summary Container -->
+        <section class="summary-container">
+            <div class="summary-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-square-poll-vertical"></i> 종합 진단 결과</h2>
+                </div>
+                <div class="summary-content">
+                    <div class="summary-item">
+                        <label>년간 총 업무소요시간</label>
+                        <div class="value-box" id="total-annual-hours">0 H</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>년간 업무일수</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="annual-work-days" value="210" min="1">
+                            <span>일</span>
+                        </div>
+                    </div>
+                    <div class="summary-item highlight">
+                        <label>1일 평균 근무시간</label>
+                        <div class="value-box" id="daily-avg-hours">0.0 H</div>
+                    </div>
+                    <div class="summary-item">
+                        <label>년간 총 업무수</label>
+                        <div class="value-box" id="total-annual-tasks">0 건</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> 타임요소별 년간 투자시간</h2>
+                </div>
+                <div class="summary-content time-elements-summary" id="time-elements-breakdown">
+                    <!-- Breakdown will be generated here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Template for Task Card -->
+    <template id="task-template">
+        <div class="task-card">
+            <div class="task-header">
+                <div class="task-title">
+                    <span class="task-index"></span>
+                    <input type="text" class="task-name" placeholder="업무명을 입력하세요 (예: 교육프로그램 운영)">
+                </div>
+                <button class="btn-icon delete-task" title="업무 삭제"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+            
+            <div class="task-meta">
+                <div class="meta-group">
+                    <label>주체</label>
+                    <select class="task-role">
+                        <option value="주관">주관</option>
+                        <option value="보조">보조</option>
+                        <option value="무관">무관</option>
+                    </select>
+                </div>
+                <div class="meta-group">
+                    <label>형태</label>
+                    <select class="task-type">
+                        <option value="신규">신규</option>
+                        <option value="반복">반복</option>
+                    </select>
+                </div>
+                <div class="meta-group">
+                    <label>년수</label>
+                    <select class="task-years">
+                        <option value="1년">1년</option>
+                        <option value="2년">2년</option>
+                        <option value="3년이상">3년이상</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="time-elements-container">
+                <div class="elements-header">
+                    <h4>타임요소 (시간)</h4>
+                    <button class="btn-text add-element"><i class="fa-solid fa-plus"></i> 요소 추가</button>
+                </div>
+                <div class="elements-list">
+                    <!-- Time elements will be injected here -->
+                </div>
+            </div>
+
+            <div class="task-summary">
+                <div class="summary-row">
+                    <span>건당 소요시간</span>
+                    <div class="result-box task-duration">0 H</div>
+                </div>
+                <div class="summary-row">
+                    <span>년간 해당업무 건수</span>
+                    <div class="input-wrapper-small">
+                        <input type="number" class="task-annual-count" value="1" min="1">
+                        <span>건</span>
+                    </div>
+                </div>
+                <div class="summary-row highlight-row">
+                    <span>년간 업무시간</span>
+                    <div class="result-box task-annual-hours">0 H</div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="script.js"></script>
+</body>
+</html>
