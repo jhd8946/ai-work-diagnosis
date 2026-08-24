@@ -286,52 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
         XLSX.writeFile(wb, `AI_자가업무진단_결과_${state.userInfo.name}.xlsx`);
     });
     
-    const lockUserInfo = () => {
-        ['user-dept', 'user-position', 'user-name', 'user-gender', 'user-years', 'user-year'].forEach(id => {
-            document.getElementById(id).disabled = true;
-        });
-    };
-
-    const unlockUserInfo = () => {
-        ['user-dept', 'user-position', 'user-name', 'user-gender', 'user-years', 'user-year'].forEach(id => {
-            document.getElementById(id).disabled = false;
-        });
-    };
-
-    const clearUserInfo = () => {
-        document.getElementById('user-dept').value = '';
-        document.getElementById('user-position').value = '';
-        document.getElementById('user-name').value = '';
-        document.getElementById('user-gender').value = '남';
-        document.getElementById('user-years').value = '';
-        document.getElementById('user-year').value = 2026;
-    };
-
-    // Replace old complete btn with new action btns
-    if(document.getElementById('user-save-btn')) {
-        document.getElementById('user-save-btn').addEventListener('click', () => {
-            saveState();
-            lockUserInfo();
-            alert('개인 기록이 저장되었습니다.');
-        });
-        
-        document.getElementById('user-edit-btn').addEventListener('click', () => {
-            unlockUserInfo();
-        });
-        
-        document.getElementById('user-reset-btn').addEventListener('click', () => {
-            if(confirm('개인 기록을 초기화하시겠습니까?')) {
-                unlockUserInfo();
-                clearUserInfo();
-                saveState();
-            }
-        });
-    }
+    document.getElementById('main-complete-btn').addEventListener('click', () => {
+        saveState();
+        alert('기본 정보가 정상적으로 저장되었습니다!');
+    });
 
     loadState();
-    
-    // Auto lock if data exists on load
-    if (state.userInfo && state.userInfo.name) {
-        lockUserInfo();
-    }
 });
