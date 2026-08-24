@@ -3,327 +3,273 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskTemplate = document.getElementById('task-template');
     
     // Summary elements
-    const totalAnnualHoursEl = document.getElementById('total-annual-hours');
-    const annualWorkDaysEl = document.getElementById('annual-work-days');
-    const dailyAvgHoursEl = document.getElementById('daily-avg-hours');
-    const totalAnnualTasksEl = document.getElementById('total-annual-tasks');
-    const timeElementsBreakdownEl = document.getElementById('time-elements-breakdown');
+    const sumTotalHours = document.getElementById('sum-total-hours');
+    const annualWorkDays = document.getElementById('annual-work-days');
+    const sumDailyHours = document.getElementById('sum-daily-hours');
+    const sumTotalTasks = document.getElementById('sum-total-tasks');
+    const timeSummaryContainer = document.getElementById('time-summary-container');
     
-    // Default preset time elements
-    const defaultElements = [
-        { name: '기안작성', hours: 0 },
-        { name: '회의자료작성', hours: 0 },
-        { name: '사전준비', hours: 0 },
-        { name: '지출기안', hours: 0 },
-        { name: '증빙수집', hours: 0 },
-        { name: '결과보고', hours: 0 }
+    // Defined time elements based on PDF Page 6 Excel spec
+    const TIME_ELEMENTS = [
+        "기획(구상)", "기안결재", "첨부자료정리", "교육준비", "출석체크", 
+        "지출결재", "결과보고작성", "문서관리", "행사총괄", "행사지원", 
+        "발표자료", "업무개발", "환경관리"
     ];
 
     let state = {
+        userInfo: { dept: '', position: '', name: '', gender: '남', years: 0, year: 2026 },
         annualWorkDays: 210,
         tasks: []
     };
 
-    // Load from local storage
     const loadState = () => {
-        const saved = localStorage.getItem('aiWorkDiagnosisState');
+        const saved = localStorage.getItem('aiWorkDiagnosisStateV2');
         if (saved) {
             state = JSON.parse(saved);
         } else {
-            // Add initial empty task if no save data
             addTask();
         }
-        annualWorkDaysEl.value = state.annualWorkDays;
+        
+        // Restore user info
+        document.getElementById('user-dept').value = state.userInfo.dept || '';
+        document.getElementById('user-position').value = state.userInfo.position || '';
+        document.getElementById('user-name').value = state.userInfo.name || '';
+        document.getElementById('user-gender').value = state.userInfo.gender || '남';
+        document.getElementById('user-years').value = state.userInfo.years || 0;
+        document.getElementById('user-year').value = state.userInfo.year || 2026;
+        annualWorkDays.value = state.annualWorkDays || 210;
+        
         renderAll();
     };
 
     const saveState = () => {
-        localStorage.setItem('aiWorkDiagnosisState', JSON.stringify(state));
+        // Update user info before saving
+        state.userInfo.dept = document.getElementById('user-dept').value;
+        state.userInfo.position = document.getElementById('user-position').value;
+        state.userInfo.name = document.getElementById('user-name').value;
+        state.userInfo.gender = document.getElementById('user-gender').value;
+        state.userInfo.years = document.getElementById('user-years').value;
+        state.userInfo.year = document.getElementById('user-year').value;
+        state.annualWorkDays = annualWorkDays.value;
+        
+        localStorage.setItem('aiWorkDiagnosisStateV2', JSON.stringify(state));
     };
 
     const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
     const addTask = () => {
+        let elMap = {};
+        TIME_ELEMENTS.forEach(el => elMap[el] = 0);
+        
         state.tasks.push({
             id: generateId(),
             name: '',
             role: '주관',
-            type: '반복',
+            type: '신규',
             years: '1년',
             annualCount: 1,
-            elements: JSON.parse(JSON.stringify(defaultElements))
+            elements: elMap
         });
         saveState();
         renderAll();
     };
 
     const removeTask = (id) => {
-        if(confirm('이 업무를 삭제하시겠습니까?')) {
+        if(confirm('해당 업무를 삭제하시겠습니까?')) {
             state.tasks = state.tasks.filter(t => t.id !== id);
             saveState();
             renderAll();
         }
     };
 
-    const updateTask = (id, field, value) => {
-        const task = state.tasks.find(t => t.id === id);
-        if (task) {
-            task[field] = value;
-            saveState();
-            updateSummary();
-        }
-    };
-
-    const updateTaskElement = (taskId, elementIndex, field, value) => {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task && task.elements[elementIndex]) {
-            task.elements[elementIndex][field] = value;
-            saveState();
-            renderTask(taskId); // Re-render specific task to update its duration
-            updateSummary();
-        }
-    };
-
-    const addElementToTask = (taskId) => {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.elements.push({ name: '', hours: 0 });
-            saveState();
-            renderAll(); // Re-render to show new element
-        }
-    };
-
-    const removeElementFromTask = (taskId, elementIndex) => {
-        const task = state.tasks.find(t => t.id === taskId);
-        if (task) {
-            task.elements.splice(elementIndex, 1);
-            saveState();
-            renderAll();
-            updateSummary();
-        }
-    };
-
-    // Rendering
     const renderAll = () => {
         tasksContainer.innerHTML = '';
         state.tasks.forEach((task, index) => {
             const taskEl = document.importNode(taskTemplate.content, true);
             const card = taskEl.querySelector('.task-card');
             
-            // Set Index
             taskEl.querySelector('.task-index').textContent = index + 1;
             
-            // Set Name
-            const nameInput = taskEl.querySelector('.task-name');
-            nameInput.value = task.name;
-            nameInput.addEventListener('change', (e) => updateTask(task.id, 'name', e.target.value));
+            const nameInp = taskEl.querySelector('.task-name');
+            nameInp.value = task.name;
+            nameInp.addEventListener('change', (e) => { task.name = e.target.value; saveState(); });
 
-            // Set Meta
-            const roleSelect = taskEl.querySelector('.task-role');
-            roleSelect.value = task.role;
-            roleSelect.addEventListener('change', (e) => updateTask(task.id, 'role', e.target.value));
+            const roleSel = taskEl.querySelector('.task-role');
+            roleSel.value = task.role;
+            roleSel.addEventListener('change', (e) => { task.role = e.target.value; saveState(); });
 
-            const typeSelect = taskEl.querySelector('.task-type');
-            typeSelect.value = task.type;
-            typeSelect.addEventListener('change', (e) => updateTask(task.id, 'type', e.target.value));
+            const typeSel = taskEl.querySelector('.task-type');
+            typeSel.value = task.type;
+            typeSel.addEventListener('change', (e) => { task.type = e.target.value; saveState(); });
 
-            const yearsSelect = taskEl.querySelector('.task-years');
-            yearsSelect.value = task.years;
-            yearsSelect.addEventListener('change', (e) => updateTask(task.id, 'years', e.target.value));
+            const yearsSel = taskEl.querySelector('.task-years');
+            yearsSel.value = task.years;
+            yearsSel.addEventListener('change', (e) => { task.years = e.target.value; saveState(); });
 
-            // Delete btn
-            taskEl.querySelector('.delete-task').addEventListener('click', () => removeTask(task.id));
-            
-            // Add element btn
-            taskEl.querySelector('.add-element').addEventListener('click', () => addElementToTask(task.id));
-
-            // Annual count
-            const countInput = taskEl.querySelector('.task-annual-count');
-            countInput.value = task.annualCount;
-            countInput.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value) || 0;
-                updateTask(task.id, 'annualCount', val);
-                renderTask(task.id);
+            const countInp = taskEl.querySelector('.task-annual-count');
+            countInp.value = task.annualCount;
+            countInp.addEventListener('input', (e) => { 
+                task.annualCount = parseInt(e.target.value) || 0; 
+                saveState(); 
+                updateCalculations(card, task);
+                updateSummary();
             });
 
-            // Render elements
-            const elementsList = taskEl.querySelector('.elements-list');
-            task.elements.forEach((el, elIndex) => {
-                const elDiv = document.createElement('div');
-                elDiv.className = 'element-item';
+            taskEl.querySelector('.delete-btn').addEventListener('click', () => removeTask(task.id));
+
+            // Render time elements
+            const elList = taskEl.querySelector('.time-elements-list');
+            TIME_ELEMENTS.forEach(elName => {
+                const row = document.createElement('div');
+                row.className = 'el-row';
                 
-                const nameInp = document.createElement('input');
-                nameInp.type = 'text';
-                nameInp.placeholder = '요소명';
-                nameInp.value = el.name;
-                nameInp.addEventListener('change', (e) => updateTaskElement(task.id, elIndex, 'name', e.target.value));
+                const label = document.createElement('div');
+                label.className = 'el-name';
+                label.textContent = elName;
                 
-                const hoursInp = document.createElement('input');
-                hoursInp.type = 'number';
-                hoursInp.min = '0';
-                hoursInp.value = el.hours;
-                hoursInp.addEventListener('input', (e) => {
-                    const val = parseFloat(e.target.value) || 0;
-                    updateTaskElement(task.id, elIndex, 'hours', val);
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.className = 'el-input';
+                inp.min = '0';
+                inp.value = task.elements[elName] || '';
+                inp.placeholder = '1~20';
+                
+                inp.addEventListener('input', (e) => {
+                    task.elements[elName] = parseFloat(e.target.value) || 0;
+                    saveState();
+                    updateCalculations(card, task);
+                    updateSummary();
                 });
-
-                const span = document.createElement('span');
-                span.textContent = 'H';
-                span.style.color = '#6c757d';
-                span.style.fontSize = '0.8rem';
-
-                const rmBtn = document.createElement('button');
-                rmBtn.className = 'remove-element';
-                rmBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                rmBtn.addEventListener('click', () => removeElementFromTask(task.id, elIndex));
-
-                elDiv.appendChild(nameInp);
-                elDiv.appendChild(hoursInp);
-                elDiv.appendChild(span);
-                elDiv.appendChild(rmBtn);
                 
-                elementsList.appendChild(elDiv);
+                const unit = document.createElement('span');
+                unit.className = 'el-unit';
+                unit.textContent = '1~20H';
+                
+                row.appendChild(label);
+                row.appendChild(inp);
+                row.appendChild(unit);
+                elList.appendChild(row);
             });
-
-            // Give the card an id to target for updates
-            card.dataset.id = task.id;
-
-            // Calculate duration and annual hours for this specific render instance
-            const duration = task.elements.reduce((sum, el) => sum + (parseFloat(el.hours) || 0), 0);
-            const annualHours = duration * (task.annualCount || 0);
             
-            taskEl.querySelector('.task-duration').textContent = duration + ' H';
-            taskEl.querySelector('.task-annual-hours').textContent = annualHours + ' H';
-
+            card.dataset.id = task.id;
             tasksContainer.appendChild(taskEl);
+            updateCalculations(card, task);
         });
         updateSummary();
     };
 
-    // Update only task calculations without full re-render
-    const renderTask = (taskId) => {
-        const task = state.tasks.find(t => t.id === taskId);
-        if(!task) return;
+    const updateCalculations = (card, task) => {
+        let duration = 0;
+        Object.values(task.elements).forEach(val => duration += val);
+        const annualHours = duration * (task.annualCount || 0);
         
-        const card = document.querySelector(`.task-card[data-id="${taskId}"]`);
-        if(card) {
-            const duration = task.elements.reduce((sum, el) => sum + (parseFloat(el.hours) || 0), 0);
-            const annualHours = duration * (task.annualCount || 0);
-            
-            card.querySelector('.task-duration').textContent = duration + ' H';
-            card.querySelector('.task-annual-hours').textContent = annualHours + ' H';
-        }
+        card.querySelector('.task-duration').textContent = duration;
+        card.querySelector('.task-annual-hours').textContent = annualHours;
     };
 
-    // Update Overall Summary
     const updateSummary = () => {
         let totalHours = 0;
         let totalTasks = 0;
-        let elementsMap = {};
+        let elTotals = {};
+        TIME_ELEMENTS.forEach(el => elTotals[el] = 0);
 
         state.tasks.forEach(task => {
-            const duration = task.elements.reduce((sum, el) => sum + (parseFloat(el.hours) || 0), 0);
+            let duration = 0;
             const count = task.annualCount || 0;
-            const annual = duration * count;
-            
-            totalHours += annual;
             totalTasks += count;
-
-            task.elements.forEach(el => {
-                if(el.name.trim() !== '') {
-                    const elAnnual = (parseFloat(el.hours) || 0) * count;
-                    if(elementsMap[el.name]) {
-                        elementsMap[el.name] += elAnnual;
-                    } else {
-                        elementsMap[el.name] = elAnnual;
-                    }
-                }
+            
+            Object.entries(task.elements).forEach(([elName, val]) => {
+                duration += val;
+                elTotals[elName] += val * count;
             });
+            totalHours += duration * count;
         });
 
-        const days = parseFloat(state.annualWorkDays) || 1;
+        const days = parseFloat(annualWorkDays.value) || 1;
         const avgDaily = totalHours / days;
 
-        totalAnnualHoursEl.textContent = totalHours + ' H';
-        totalAnnualTasksEl.textContent = totalTasks + ' 건';
-        dailyAvgHoursEl.textContent = avgDaily.toFixed(1) + ' H';
+        sumTotalHours.textContent = totalHours;
+        sumTotalTasks.textContent = totalTasks;
+        sumDailyHours.textContent = avgDaily.toFixed(1);
 
-        // Update elements breakdown
-        timeElementsBreakdownEl.innerHTML = '';
-        Object.entries(elementsMap).sort((a,b) => b[1] - a[1]).forEach(([name, hours]) => {
-            if(hours > 0) {
-                const div = document.createElement('div');
-                div.className = 'breakdown-item';
-                div.innerHTML = `<span>${name}</span><span>${hours} H</span>`;
-                timeElementsBreakdownEl.appendChild(div);
-            }
+        // Update breakdown
+        timeSummaryContainer.innerHTML = '';
+        TIME_ELEMENTS.forEach(elName => {
+            const row = document.createElement('div');
+            row.className = 'sum-row';
+            row.innerHTML = `<span>${elName}</span><div class="sum-val">${elTotals[elName]}h</div>`;
+            timeSummaryContainer.appendChild(row);
         });
     };
 
     // Event Listeners
     document.getElementById('add-task-btn').addEventListener('click', addTask);
     
-    annualWorkDaysEl.addEventListener('input', (e) => {
-        state.annualWorkDays = parseFloat(e.target.value) || 210;
+    annualWorkDays.addEventListener('input', () => {
         saveState();
         updateSummary();
     });
 
     document.getElementById('reset-btn').addEventListener('click', () => {
         if(confirm('모든 데이터를 초기화하시겠습니까?')) {
-            localStorage.removeItem('aiWorkDiagnosisState');
-            state = { annualWorkDays: 210, tasks: [] };
+            localStorage.removeItem('aiWorkDiagnosisStateV2');
+            state.tasks = [];
             addTask();
         }
     });
 
     document.getElementById('export-excel-btn').addEventListener('click', () => {
+        saveState();
         const wb = XLSX.utils.book_new();
-        
-        // Prepare Data
         const data = [];
-        data.push(["업무명", "주체", "형태", "지속년수", "건당소요시간(H)", "년간건수", "년간업무시간(H)", "타임요소상세"]);
+        
+        // Header according to Page 6
+        const header = ["업무명", "업무주체", "업무형태", "업무지속년수", ...TIME_ELEMENTS, "소요시간", "횟수", "총소요시간"];
+        data.push(header);
         
         state.tasks.forEach(task => {
-            const duration = task.elements.reduce((sum, el) => sum + (parseFloat(el.hours) || 0), 0);
-            const annualHours = duration * (task.annualCount || 0);
-            const elementsStr = task.elements.filter(e => parseFloat(e.hours) > 0)
-                                    .map(e => `${e.name}(${e.hours}h)`)
-                                    .join(", ");
-                                    
-            data.push([
+            let row = [
                 task.name || '미입력',
                 task.role,
                 task.type,
-                task.years,
-                duration,
-                task.annualCount,
-                annualHours,
-                elementsStr
-            ]);
+                task.years
+            ];
+            let duration = 0;
+            
+            TIME_ELEMENTS.forEach(el => {
+                const val = task.elements[el] || 0;
+                row.push(val > 0 ? val : "");
+                duration += val;
+            });
+            
+            const count = task.annualCount || 0;
+            const total = duration * count;
+            
+            row.push(duration);
+            row.push(count);
+            row.push(total);
+            
+            data.push(row);
         });
         
-        // Add Summary row
-        const totalHours = state.tasks.reduce((sum, task) => {
-            const dur = task.elements.reduce((s, el) => s + (parseFloat(el.hours) || 0), 0);
-            return sum + (dur * (task.annualCount || 0));
-        }, 0);
-        const totalCounts = state.tasks.reduce((sum, task) => sum + (task.annualCount || 0), 0);
-        
-        data.push([]);
-        data.push(["종합 결과"]);
-        data.push(["총 년간 업무소요시간", `${totalHours} H`]);
-        data.push(["년간 업무일수", `${state.annualWorkDays} 일`]);
-        data.push(["1일 평균 근무시간", `${(totalHours / state.annualWorkDays).toFixed(1)} H`]);
-        data.push(["총 년간 업무수", `${totalCounts} 건`]);
-
         const ws = XLSX.utils.aoa_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "자가업무진단");
+        XLSX.utils.book_append_sheet(wb, ws, "업무진단결과");
         
-        // File download
-        XLSX.writeFile(wb, "AI_자가업무진단_결과.xlsx");
+        // User Info sheet
+        const uiData = [
+            ["소속", "직위", "성명", "성별", "근무년수", "해당년도"],
+            [state.userInfo.dept, state.userInfo.position, state.userInfo.name, state.userInfo.gender, state.userInfo.years, state.userInfo.year]
+        ];
+        const uiWs = XLSX.utils.aoa_to_sheet(uiData);
+        XLSX.utils.book_append_sheet(wb, uiWs, "사용자정보");
+        
+        XLSX.writeFile(wb, `AI_자가업무진단_결과_${state.userInfo.name}.xlsx`);
+    });
+    
+    document.getElementById('main-complete-btn').addEventListener('click', () => {
+        saveState();
+        alert('기본 정보가 정상적으로 저장되었습니다!');
     });
 
-    // Init
     loadState();
 });
