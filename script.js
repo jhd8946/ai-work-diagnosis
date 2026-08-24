@@ -221,6 +221,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('reset-btn').addEventListener('click', () => {
         if(confirm('모든 데이터를 초기화하시겠습니까?')) {
             localStorage.removeItem('aiWorkDiagnosisStateV2');
+            
+            // Clear User Info DOM
+            document.getElementById('user-dept').value = '';
+            document.getElementById('user-position').value = '';
+            document.getElementById('user-name').value = '';
+            document.getElementById('user-gender').value = '남';
+            document.getElementById('user-years').value = '';
+            document.getElementById('user-year').value = 2026;
+            document.getElementById('annual-work-days').value = 210;
+
+            state.userInfo = { dept: '', position: '', name: '', gender: '남', years: 0, year: 2026 };
+            state.annualWorkDays = 210;
             state.tasks = [];
             addTask();
         }
