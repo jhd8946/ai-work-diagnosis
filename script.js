@@ -117,6 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             taskEl.querySelector('.delete-btn').addEventListener('click', () => removeTask(task.id));
 
+            taskEl.querySelector('.task-complete').addEventListener('click', () => {
+                addTask();
+                setTimeout(() => {
+                    const scrollContainer = document.querySelector('.tasks-wrapper');
+                    scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+                }, 100);
+            });
+
             // Render time elements
             const elList = taskEl.querySelector('.time-elements-list');
             TIME_ELEMENTS.forEach(elName => {
